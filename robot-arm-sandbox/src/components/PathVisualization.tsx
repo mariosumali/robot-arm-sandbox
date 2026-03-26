@@ -17,7 +17,7 @@ function EETrail() {
   return (
     <Line
       points={points}
-      color="#00ff88"
+      color="#34d399"
       lineWidth={2}
       transparent
       opacity={0.6}
