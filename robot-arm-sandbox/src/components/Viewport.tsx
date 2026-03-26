@@ -218,7 +218,11 @@ function ViewportHint() {
   const joints = useSandboxStore(s => s.joints);
   if (joints.length >= 2) return null;
   return (
-    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'var(--text-faint)', fontSize: '14px', fontFamily: 'var(--font-sans)', pointerEvents: 'none', textAlign: 'center' }}>
+    <div style={{
+      position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+      color: 'var(--text-faint)', fontSize: 13, fontFamily: 'var(--font-sans)',
+      pointerEvents: 'none', textAlign: 'center', opacity: 0.6,
+    }}>
       Pick a preset or add parts from the left
     </div>
   );
