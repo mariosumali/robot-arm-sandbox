@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Vector3 } from 'three';
 import { useSandboxStore, getEEPosition } from '../lib/store';
 import { computeAllTransforms, positionFromMatrix } from '../lib/kinematics';
 import { FRIENDLY_NAMES, JOINT_COLORS } from '../lib/jointDefaults';
