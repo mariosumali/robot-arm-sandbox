@@ -1,10 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="7" fill="#0b0f14"/>
-  <g transform="translate(16,16) scale(0.26) translate(-50,-52)" fill="none" stroke="#60a5fa" stroke-width="10" stroke-linecap="round">
-    <line x1="24" y1="95" x2="24" y2="8"/>
-    <line x1="40" y1="8" x2="40" y2="38"/>
-    <line x1="56" y1="8" x2="56" y2="38"/>
-    <line x1="72" y1="8" x2="72" y2="38"/>
-    <path d="M24,60 C24,74.4 35.6,86 50,86 C64.4,86 76,74.4 76,60 C76,45.6 64.4,34 50,34 C42,34 35,40 35,50 C35,58 40,62 49,60"/>
+  <g transform="translate(5.5,2) scale(0.097)" stroke="#60a5fa" stroke-width="24" stroke-linecap="round" fill="none">
+    <line x1="130" y1="35" x2="130" y2="80"/>
+    <line x1="90" y1="50" x2="90" y2="120"/>
+    <line x1="170" y1="65" x2="170" y2="120"/>
+    <path d="M 50 85 L 50 160 A 60 60 0 0 0 170 160 A 40 40 0 0 0 90 160 A 20 20 0 0 0 130 160"/>
   </g>
 </svg>
