@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { TopBar } from './components/TopBar';
 import { LeftPanel } from './components/LeftPanel';
 import { Viewport } from './components/Viewport';
 import { RightPanel } from './components/RightPanel';
@@ -42,13 +43,24 @@ export default function App() {
   useIK();
   useSimulation();
 
+  const leftOpen = useSandboxStore(s => s.leftPanelOpen);
+  const rightOpen = useSandboxStore(s => s.rightPanelOpen);
+  const bottomOpen = useSandboxStore(s => s.bottomPanelOpen);
+
+  const layoutClasses = [
+    'app-layout',
+    !leftOpen && 'left-collapsed',
+    !rightOpen && 'right-collapsed',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className="app-layout">
+    <div className={layoutClasses}>
       <KeyboardShortcuts />
-      <LeftPanel />
+      <TopBar />
+      {leftOpen && <LeftPanel />}
       <Viewport />
-      <RightPanel />
-      <BottomPanel />
+      {rightOpen && <RightPanel />}
+      {bottomOpen && <BottomPanel />}
     </div>
   );
 }
