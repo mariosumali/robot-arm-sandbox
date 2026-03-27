@@ -46,9 +46,17 @@ export default function App() {
   const leftOpen = useSandboxStore(s => s.leftPanelOpen);
   const rightOpen = useSandboxStore(s => s.rightPanelOpen);
   const bottomOpen = useSandboxStore(s => s.bottomPanelOpen);
+  const readmeDemo = useSandboxStore(s => s.readmeDemo);
+  const startReadmeDemo = useSandboxStore(s => s.startReadmeDemo);
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('demo') === 'readme') startReadmeDemo();
+  }, [startReadmeDemo]);
 
   const layoutClasses = [
     'app-layout',
+    readmeDemo && 'readme-demo',
     !leftOpen && 'left-collapsed',
     !rightOpen && 'right-collapsed',
   ].filter(Boolean).join(' ');
@@ -56,7 +64,7 @@ export default function App() {
   return (
     <div className={layoutClasses}>
       <KeyboardShortcuts />
-      <TopBar />
+      {!readmeDemo && <TopBar />}
       {leftOpen && <LeftPanel />}
       <Viewport />
       {rightOpen && <RightPanel />}
