@@ -2,6 +2,8 @@
 
 An interactive 3D robot arm simulator built with React, Three.js, and Zustand. Compose arbitrary kinematic chains from modular joint types, solve inverse kinematics in real time, define multi-waypoint paths, and visualize the full forward/inverse kinematics pipeline -- all in the browser.
 
+![6-DOF spherical arm tracking a Cartesian path through three waypoints (looping playback)](docs/demo-6dof-path.gif)
+
 ---
 
 ## Table of Contents
@@ -207,6 +209,8 @@ All presets initialize with the first revolute joint at `theta = pi/2`, producin
 ## Project Structure
 
 ```
+docs/
+  demo-6dof-path.gif   # Hero animation on GitHub README (regenerate: npm run capture:readme-gif)
 robot-arm-sandbox/
   src/
     lib/
@@ -236,6 +240,7 @@ robot-arm-sandbox/
   package.json
   tsconfig.json
   vite.config.ts
+  vitest.config.ts
 ```
 
 ---
@@ -268,6 +273,15 @@ npm run build
 ```
 
 Outputs to `dist/`. Static files suitable for any HTTP server.
+
+### Demo GIF (maintainers)
+
+The README animation is generated from the live app at [`?demo=readme`](http://localhost:5173/?demo=readme) (6-DOF spherical arm, three waypoints, Cartesian path, looping playback). To rebuild **`docs/demo-6dof-path.gif`** at the repository root (what GitHub shows), install [ffmpeg](https://ffmpeg.org/) on your PATH, then:
+
+```bash
+cd robot-arm-sandbox
+npm run capture:readme-gif
+```
 
 ---
 
