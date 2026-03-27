@@ -69,9 +69,14 @@ export interface SandboxStore {
   showAnalytics: boolean;
   showPathLine: boolean;
 
+  mode: 'build' | 'animate' | 'analyze';
+
   leftPanelOpen: boolean;
   rightPanelOpen: boolean;
   bottomPanelOpen: boolean;
+
+  /** Chromeless layout + fixed camera for README / ?demo=readme capture. */
+  readmeDemo: boolean;
 
   addJoint: (type: Joint['type'], afterIndex?: number) => void;
   removeJoint: (id: string) => void;
@@ -121,11 +126,16 @@ export interface SandboxStore {
   toggleAnalytics: () => void;
   togglePathLine: () => void;
 
+  setMode: (mode: 'build' | 'animate' | 'analyze') => void;
+
   toggleLeftPanel: () => void;
   toggleRightPanel: () => void;
   toggleBottomPanel: () => void;
 
   getAnalytics: () => JointAnalytics[];
+
+  /** 6-DOF preset, three waypoints, solved Cartesian path, looping playback (no undo push). */
+  startReadmeDemo: () => void;
 }
 
 function makeName(type: Joint['type'], joints: Joint[]): string {
@@ -237,19 +247,19 @@ export const PRESET_NAMES = Object.keys(PRESETS);
 
 const MAX_TRACE = 600;
 
-function buildUprightArm(types: Joint['type'][]): Joint[] {
-  const joints = buildArm(types);
-  if (joints.length > 1 && joints[1].type === 'revolute') {
-    joints[1] = { ...joints[1], theta: Math.PI / 2 };
-  }
+function buildDefaultArm(): Joint[] {
+  const joints = buildArm(['base', 'revolute', 'end-effector']);
+  joints[1] = { ...joints[1], d: 1.0, a: 0, alpha: 0, theta: 0, name: 'Base Rotate' };
+  joints[2] = { ...joints[2], d: 0.2 };
   return joints;
 }
 
 export const useSandboxStore = create<SandboxStore>((set, get) => ({
-  joints: buildUprightArm(PRESETS['Simple 2-Joint']),
+  joints: buildDefaultArm(),
   selectedJointId: null,
   basePosition: [0, 0, 0],
-  ikTarget: new Vector3(1.2, 0.8, 0),
+  // Match FK height: revolute d + end-effector d (yaw cannot change Y when a=0)
+  ikTarget: new Vector3(0, 1.2, 0),
   ikResult: null,
   autoIK: true,
   isDraggingJoint: false,
@@ -277,9 +287,13 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
   showAnalytics: false,
   showPathLine: true,
 
+  mode: 'build',
+
   leftPanelOpen: true,
   rightPanelOpen: true,
   bottomPanelOpen: true,
+
+  readmeDemo: false,
 
   pushUndo: () => {
     const { joints, undoStack } = get();
@@ -349,7 +363,7 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
     pauseTimelineForIk(get, set);
     set({ pathAnimState: 'idle' });
     const { joints, ikTarget, basePosition } = get();
-    const startPose = capturePose(joints);
+
     const result = solveIKFn(joints, ikTarget, basePosition);
     if (result.angles.length === 0) {
       set({ ikResult: { converged: false, iterations: 0 } });
@@ -357,7 +371,30 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
     }
     const solvedJoints = applyIKResult(joints, result);
     const endPose = capturePose(solvedJoints);
+
+    const currentPose = capturePose(joints);
+    const poseKeys = Object.keys(endPose);
+    const alreadyAtSolution = poseKeys.length > 0 && poseKeys.every(k =>
+      Math.abs((currentPose[k] ?? 0) - (endPose[k] ?? 0)) < 0.01
+    );
+
+    let startPose: Record<string, number>;
+    let startJoints: Joint[];
+    if (alreadyAtSolution) {
+      startJoints = joints.map(j => {
+        if (j.type === 'revolute') return { ...j, theta: 0 };
+        if (j.type === 'elbow') return { ...j, theta: 0, theta2: 0 };
+        if (j.type === 'prismatic') return { ...j, d: 0 };
+        return { ...j };
+      });
+      startPose = capturePose(startJoints);
+    } else {
+      startPose = currentPose;
+      startJoints = joints;
+    }
+
     set({
+      joints: startJoints,
       animStartPose: startPose,
       animEndPose: endPose,
       animState: 'playing',
@@ -390,19 +427,11 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
   loadPreset: (name) => {
     const types = PRESETS[name]; if (!types) return;
     get().pushUndo();
-    let joints = buildArm(types);
-
-    if (joints.length > 1 && joints[1].type === 'revolute') {
-      joints[1] = { ...joints[1], theta: Math.PI / 2 };
-    }
-
-    if (name === '6-DOF Spherical') {
-      joints[1] = { ...joints[1], a: 0.5, d: 0, alpha: -Math.PI / 2, theta: Math.PI / 2, name: 'Waist' };
-      joints[3] = { ...joints[3], a: 0.6, name: 'Wrist' };
-    }
+    const joints = buildArm(types);
 
     set({
       joints,
+      readmeDemo: false,
       selectedJointId: null,
       basePosition: [0, 0, 0],
       ikResult: null,
@@ -419,6 +448,49 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
       pathAnimProgress: 0,
       eeTrace: [],
     });
+  },
+
+  startReadmeDemo: () => {
+    const joints = buildArm(PRESETS['6-DOF Spherical']);
+    const wps: Waypoint[] = [
+      { id: uuid(), position: new Vector3(0.52, 0.72, 0.38), label: '1' },
+      { id: uuid(), position: new Vector3(-0.42, 0.58, 0.58), label: '2' },
+      { id: uuid(), position: new Vector3(0.22, 0.5, -0.45), label: '3' },
+    ];
+    set({
+      readmeDemo: true,
+      joints,
+      selectedJointId: null,
+      basePosition: [0, 0, 0],
+      ikTarget: wps[0].position.clone(),
+      ikResult: null,
+      autoIK: false,
+      isDraggingJoint: false,
+      animState: 'idle',
+      animStartPose: null,
+      animEndPose: null,
+      animProgress: 0,
+      keyframes: [],
+      simulationState: 'idle',
+      playbackTime: 0,
+      waypoints: wps,
+      waypointPoses: null,
+      waypointEEPath: null,
+      pathAnimState: 'idle',
+      pathAnimProgress: 0,
+      eeTrace: [],
+      showTrace: true,
+      animSpeed: 1.2,
+      animLoop: true,
+      showAnalytics: false,
+      showPathLine: true,
+      mode: 'animate',
+      leftPanelOpen: false,
+      rightPanelOpen: false,
+      bottomPanelOpen: false,
+    });
+    get().solveWaypointPath();
+    get().playPath();
   },
 
   recordKeyframe: () => {
@@ -683,6 +755,8 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
 
   toggleAnalytics: () => set({ showAnalytics: !get().showAnalytics }),
   togglePathLine: () => set({ showPathLine: !get().showPathLine }),
+
+  setMode: (mode) => set({ mode }),
 
   toggleLeftPanel: () => set({ leftPanelOpen: !get().leftPanelOpen }),
   toggleRightPanel: () => set({ rightPanelOpen: !get().rightPanelOpen }),
